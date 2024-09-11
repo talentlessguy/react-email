@@ -4,15 +4,15 @@
 
 import usePromise from "react-promise-suspense";
 import { Suspense } from "react";
-import { Template } from "../shared/utils/template";
-import { Preview } from "../shared/utils/preview";
-import { render } from "./render";
+import { Template } from "./shared/utils/template";
+import { Preview } from "./shared/utils/preview";
+import { renderAsync } from "./render-async";
 
 type Import = typeof import("react-dom/server") & {
   default: typeof import("react-dom/server");
 };
 
-describe("render on node environments", () => {
+describe("renderAsync on node environments", () => {
   it("converts a React component into HTML with Next 14 error stubs", async () => {
     vi.mock("react-dom/server", async () => {
       const ReactDOMServer = await vi.importActual<Import>("react-dom/server");
@@ -21,15 +21,6 @@ describe("render on node environments", () => {
 
       return {
         ...ReactDOMServer,
-        default: {
-          ...ReactDOMServer.default,
-          renderToString() {
-            throw new Error(ERROR_MESSAGE);
-          },
-          renderToStaticMarkup() {
-            throw new Error(ERROR_MESSAGE);
-          },
-        },
         renderToString() {
           throw new Error(ERROR_MESSAGE);
         },
@@ -39,10 +30,10 @@ describe("render on node environments", () => {
       };
     });
 
-    const actualOutput = await render(<Template firstName="Jim" />);
+    const actualOutput = await renderAsync(<Template firstName="Jim" />);
 
     expect(actualOutput).toMatchInlineSnapshot(
-      `"<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><link rel="preload" as="image" href="img/test.png"/><!--$--><h1>Welcome, <!-- -->Jim<!-- -->!</h1><img alt="test" src="img/test.png"/><p>Thanks for trying our product. We&#x27;re thrilled to have you on board!</p><!--/$-->"`,
+      `"<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><link rel="preload" as="image" href="img/test.png"/><h1>Welcome, Jim!</h1><img alt="test" src="img/test.png"/><p>Thanks for trying our product. We&#x27;re thrilled to have you on board!</p>"`,
     );
 
     vi.resetAllMocks();
@@ -58,7 +49,7 @@ describe("render on node environments", () => {
       return <div dangerouslySetInnerHTML={{ __html: html }} />;
     };
 
-    const renderedTemplate = await render(
+    const renderedTemplate = await renderAsync(
       <Suspense>
         <EmailTemplate />
       </Suspense>,
@@ -68,15 +59,15 @@ describe("render on node environments", () => {
   });
 
   it("converts a React component into HTML", async () => {
-    const actualOutput = await render(<Template firstName="Jim" />);
+    const actualOutput = await renderAsync(<Template firstName="Jim" />);
 
     expect(actualOutput).toMatchInlineSnapshot(
-      `"<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><link rel="preload" as="image" href="img/test.png"/><!--$--><h1>Welcome, <!-- -->Jim<!-- -->!</h1><img alt="test" src="img/test.png"/><p>Thanks for trying our product. We&#x27;re thrilled to have you on board!</p><!--/$-->"`,
+      `"<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><link rel="preload" as="image" href="img/test.png"/><h1>Welcome, Jim!</h1><img alt="test" src="img/test.png"/><p>Thanks for trying our product. We&#x27;re thrilled to have you on board!</p>"`,
     );
   });
 
   it("converts a React component into PlainText", async () => {
-    const actualOutput = await render(<Template firstName="Jim" />, {
+    const actualOutput = await renderAsync(<Template firstName="Jim" />, {
       plainText: true,
     });
 
@@ -88,7 +79,7 @@ describe("render on node environments", () => {
   });
 
   it("converts to plain text and removes reserved ID", async () => {
-    const actualOutput = await render(<Preview />, {
+    const actualOutput = await renderAsync(<Preview />, {
       plainText: true,
     });
 
